@@ -36,9 +36,28 @@ class MyHomePage extends StatefulWidget {
   _MyHomePageState createState() => _MyHomePageState();
 }
 
-class _MyHomePageState extends State<MyHomePage> {
+class _MyHomePageState extends State<MyHomePage> with WidgetsBindingObserver {
   final List<Transaction> _userTransactions = [];
   var _showChart = false;
+
+  @override
+  void initState() {
+    super.initState();
+
+    WidgetsBinding.instance.addObserver(this);
+  }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    super.didChangeAppLifecycleState(state);
+
+    print(state);
+  }
+
+  void dispose() {
+    super.dispose();
+    WidgetsBinding.instance.removeObserver(this);
+  }
 
   void _addTransaction(String title, double amount, DateTime date) {
     final newTransaction = Transaction(
@@ -120,9 +139,10 @@ class _MyHomePageState extends State<MyHomePage> {
     );
   }
 
-  List<Widget> _buildLandscapeContent(double contentHeight) {
+  List<Widget> _buildLandscapeContent(double contentHeight, Widget transactionList) {
     return [
       Row(
+        key: ValueKey('switch'),
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
           Text(_showChart ? 'Hide chart' : 'Show chart'),
@@ -134,25 +154,29 @@ class _MyHomePageState extends State<MyHomePage> {
       ),
       _showChart
           ? Container(
+              key: ValueKey('chart'),
               height: contentHeight * 0.8,
               child: _buildChart(),
             )
           : Container(
+              key: ValueKey('list'),
               height: contentHeight * 0.8,
-              child: _buildTransactionList(),
+              child: transactionList,
             )
     ];
   }
 
-  List<Widget> _buildPortraitContent(double contentHeight) {
+  List<Widget> _buildPortraitContent(double contentHeight, Widget transactionList) {
     return [
       Container(
+        key: ValueKey('chart'),
         height: contentHeight * 0.3,
         child: _buildChart(),
       ),
       Container(
-        height: contentHeight * 0.7,
-        child: _buildTransactionList(),
+        key: ValueKey('list'),
+        height: contentHeight * 0.7,  
+        child: transactionList,
       )
     ];
   }
@@ -161,6 +185,7 @@ class _MyHomePageState extends State<MyHomePage> {
     final mediaQuery = MediaQuery.of(context);
     final isLandscape = mediaQuery.orientation == Orientation.landscape;
     final appBar = _buildAppBar();
+    final transactionList = _buildTransactionList();
     final contentHeight = mediaQuery.size.height -
         appBar.preferredSize.height -
         mediaQuery.padding.top;
@@ -172,8 +197,8 @@ class _MyHomePageState extends State<MyHomePage> {
           mainAxisAlignment: MainAxisAlignment.start,
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            if (isLandscape) ..._buildLandscapeContent(contentHeight),
-            if (!isLandscape) ..._buildPortraitContent(contentHeight),
+            if (isLandscape) ..._buildLandscapeContent(contentHeight, transactionList),
+            if (!isLandscape) ..._buildPortraitContent(contentHeight, transactionList),
           ],
         ),
       ),
